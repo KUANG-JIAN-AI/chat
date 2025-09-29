@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <title>实时聊天</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 登录页 */
+        #login {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        #login input {
+            padding: 10px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            width: 200px;
+        }
+
+        #login button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* 主布局 */
+        #chat {
+            flex: 1;
+            display: flex;
+            height: 100vh;
+        }
+
+        #sidebar {
+            width: 25%;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            background: #f9f9f9;
+        }
+
+        #friends {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        #friends h3 {
+            padding: 17.5px;
+        }
+
+        .friend {
+            padding: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .friend:hover {
+            background: #eee;
+        }
+
+        .friend.active {
+            background: #d1f7c4;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #bbb;
+            margin-right: 10px;
+        }
+
+        #content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #header {
+            height: 60px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            background: #fafafa;
+        }
+
+        #messages {
+            flex: 1;
+            display: flex;
+            /* 让消息用 Flex 布局 */
+            flex-direction: column;
+            /* 一条条从上往下排 */
+            overflow-y: auto;
+            padding: 15px;
+            background: #fff;
+        }
+
+        #input {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            background: #fafafa;
+        }
+
+        #msgInput {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            margin-right: 10px;
+        }
+
+        #input button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* 消息气泡 */
+        .msg {
+            margin: 8px 0;
+            max-width: 60%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            word-break: break-word;
+        }
+
+        /* 我发的消息 → 右边 */
+        .me {
+            background: #d1f7c4;
+            align-self: flex-end;
+            text-align: right;
+        }
+
+        /* 对方发的消息 → 左边 */
+        .other {
+            background: #f1f1f1;
+            align-self: flex-start;
+            text-align: left;
+        }
+
+        /* 底部菜单 */
+        #footer {
+            height: 60px;
+            display: flex;
+            border-top: 1px solid #ddd;
+        }
+
+        #footer button {
+            flex: 1;
+            border: none;
+            background: #fafafa;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #footer button:hover {
+            background: #eee;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 登录 -->
+    <div id="login">
+        <h2>请输入昵称</h2>
+        <input id="nickname" placeholder="昵称">
+        <button onclick="login()">登录</button>
+    </div>
+
+    <!-- 聊天主界面 -->
+    <div id="chat" style="display:none;">
+        <div id="sidebar">
+            <div id="friends">
+                <h3>好友列表</h3>
+            </div>
+            <div id="footer">
+                <button onclick="showFriends()">好友</button>
+                <button onclick="showProfile()">个人中心</button>
+            </div>
+        </div>
+        <div id="content">
+            <div id="header">请选择一个好友</div>
+            <div id="messages"></div>
+            <div id="input">
+                <input id="msgInput" placeholder="输入消息...">
+                <button onclick="sendMessage()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io("http://127.0.0.1:5000");
+        let myName = "";
+        let currentFriend = "";
+
+        function login() {
+            myName = document.getElementById("nickname").value;
+            if (!myName) return alert("请输入昵称");
+            socket.emit("login", { nickname: myName });
+            document.getElementById("login").style.display = "none";
+            document.getElementById("chat").style.display = "flex";
+        }
+
+        socket.on("user_list", (users) => {
+            let friendsDiv = document.getElementById("friends");
+            friendsDiv.innerHTML = "<h3>好友列表</h3>";
+            users.forEach(u => {
+                if (u !== myName) {
+                    let div = document.createElement("div");
+                    div.className = "friend";
+                    div.innerHTML = `<div class="avatar"></div><span>${u}</span>`;
+                    div.onclick = () => selectFriend(u, div);
+                    friendsDiv.appendChild(div);
+                }
+            });
+        });
+
+        function selectFriend(friend, div) {
+            currentFriend = friend;
+            document.querySelectorAll(".friend").forEach(el => el.classList.remove("active"));
+            div.classList.add("active");
+            document.getElementById("header").innerText = "与 " + friend + " 的聊天";
+            document.getElementById("messages").innerHTML = "";
+        }
+
+        function sendMessage() {
+            let input = document.getElementById("msgInput");
+            let msg = input.value;
+            if (!msg || !currentFriend) return;
+            socket.emit("send_message", { sender: myName, receiver: currentFriend, message: msg });
+            addMessage(myName, msg, true);
+            input.value = "";
+        }
+
+        socket.on("receive_message", (data) => {
+            addMessage(data.sender, data.message, false);
+            if (data.sender !== currentFriend) {
+                alert(`你收到来自 ${data.sender} 的消息：${data.message}`);
+            }
+        });
+
+        function addMessage(sender, msg, isMe) {
+            let container = document.getElementById("messages");
+            let div = document.createElement("div");
+            div.className = "msg " + (isMe ? "me" : "other");
+            div.innerText = msg;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 菜单功能
+        function showFriends() {
+            // document.getElementById("friends").style.display = "block";
+            document.getElementById("header").innerText = currentFriend ? "与 " + currentFriend + " 的聊天" : "请选择一个好友";
+        }
+
+        function showProfile() {
+            // document.getElementById("friends").style.display = "none";
+            document.getElementById("header").innerText = "个人中心 - " + myName;
+            document.getElementById("messages").innerHTML = `<p style="padding:20px;">欢迎，${myName}！这里可以放个人信息。</p>`;
+        }
+    </script>
+</body>
+
+</html>
