@@ -194,7 +194,8 @@
     <!-- 登录 -->
     <div id="login">
         <h2>请输入昵称</h2>
-        <input id="nickname" placeholder="昵称">
+        <input id="nickname" name="nickname" placeholder="昵称">
+        <input id="password" name="password" placeholder="密码">
         <button onclick="login()">登录</button>
     </div>
 
@@ -265,7 +266,7 @@
 
         socket.on("receive_message", (data) => {
             addMessage(data.sender, data.message, false);
-            if (data.sender !== currentFriend) {
+            if (data.sender === currentFriend) {
                 alert(`你收到来自 ${data.sender} 的消息：${data.message}`);
             }
         });
