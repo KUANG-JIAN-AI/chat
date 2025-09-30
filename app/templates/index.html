@@ -223,14 +223,31 @@
     <script>
         const socket = io("http://127.0.0.1:5000");
         let myName = "";
+        let passWord = "";
         let currentFriend = "";
 
         function login() {
             myName = document.getElementById("nickname").value;
+            passWord = document.getElementById("password").value;
             if (!myName) return alert("请输入昵称");
-            socket.emit("login", { nickname: myName });
-            document.getElementById("login").style.display = "none";
-            document.getElementById("chat").style.display = "flex";
+
+            fetch("/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ nickname: myName, password: passWord })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.msg);
+                    if (data.code == 200) {
+                        socket.emit("login", { nickname: myName });
+                        document.getElementById("login").style.display = "none";
+                        document.getElementById("chat").style.display = "flex";
+                    }
+                });
+
         }
 
         socket.on("user_list", (users) => {

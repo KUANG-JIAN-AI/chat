@@ -20,4 +20,5 @@ CREATE TABLE `chat_users` (
   `updated_at` int(10) unsigned NOT NULL DEFAULT 0,  
   `deleted_at` int(10) unsigned DEFAULT NULL,  
   PRIMARY KEY (`id`)  
+  UNIQUE KEY `uk_nickname` (`nickname`)  
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
