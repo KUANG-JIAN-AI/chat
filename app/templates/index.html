@@ -229,6 +229,7 @@
     <script>
         const socket = io("http://127.0.0.1:5000");
         let userId = localStorage.getItem('userid') || 0;
+        let friendId = 0;
         let myName = localStorage.getItem('nickname') || "";
         let passWord = "";
         let logged = localStorage.getItem('logged') || false;
@@ -302,6 +303,7 @@
                             if (friend.nickname !== myName) {
                                 let div = document.createElement("div");
                                 div.className = "friend";
+                                div.setAttribute("data-userid", friend.id);
                                 div.innerHTML = `<div class="avatar"></div><span>${friend.nickname}</span>`;
                                 div.onclick = () => selectFriend(friend.nickname, div);
                                 friendsDiv.appendChild(div);
@@ -316,19 +318,56 @@
 
         function selectFriend(friend, div) {
             currentFriend = friend;
+            friendId = div.getAttribute("data-userid");
             document.querySelectorAll(".friend").forEach(el => el.classList.remove("active"));
             div.classList.add("active");
             document.getElementById("header").innerText = "与 " + friend + " 的聊天";
             document.getElementById("messages").innerHTML = "";
+
+            // ✅ 拉取历史消息
+            fetch(`/msg?user_id=${userId}&friend_id=${friendId}`, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        data.data.forEach(msg => {
+                            addMessage(
+                                msg.sender_id == userId ? myName : currentFriend,
+                                msg.message,
+                                msg.sender_id == userId
+                            );
+                        });
+                    } else {
+                        console.error(data.msg || "获取聊天记录失败");
+                    }
+                });
         }
 
+        // 发送消息
         function sendMessage() {
             let input = document.getElementById("msgInput");
             let msg = input.value;
             if (!msg || !currentFriend) return;
-            socket.emit("send_message", { sender: myName, receiver: currentFriend, message: msg });
-            addMessage(myName, msg, true);
-            input.value = "";
+
+            fetch("/msg", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ sender_id: userId, receiver_id: friendId, message: msg })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    console.log(data);
+                    if (data.code == 200) {
+                        socket.emit("send_message", { sender: myName, receiver: currentFriend, message: msg });
+                        addMessage(myName, msg, true);
+                        input.value = "";
+                    }
+                });
+
         }
 
         socket.on("receive_message", (data) => {
@@ -338,6 +377,7 @@
             }
         });
 
+        // 接收到的消息
         function addMessage(sender, msg, isMe) {
             let container = document.getElementById("messages");
             let div = document.createElement("div");
