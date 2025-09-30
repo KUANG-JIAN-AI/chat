@@ -9,7 +9,7 @@ def login():
     password = data.get("password")
 
     if not nickname or not password:
-        return {'code': 400, 'msg': 'nickname or password missing'}
+        return {"code": 400, "msg": "nickname or password missing"}
 
     with current_app.app_context():
         user = Users.query.filter_by(nickname=nickname).first()
@@ -20,9 +20,22 @@ def login():
 
             db.session.add(user)
             db.session.commit()
-            return {'code': 200, 'msg': 'success'}
+            return {
+                "code": 200,
+                "msg": "success",
+                "data": {"id": user.id, "nickname": user.nickname},
+            }
 
         if user.check_password(password):
-            return {'code': 200, 'msg': 'login success', 'data': {'id': user.id, 'nickname': user.nickname}}
+            return {
+                "code": 200,
+                "msg": "login success",
+                "data": {"id": user.id, "nickname": user.nickname},
+            }
         else:
-            return {'code': 401, 'msg': 'wrong password'}
+            return {"code": 401, "msg": "wrong password"}
+
+
+def get_friends():
+    users = Users.query.all()
+    return {"code": 200, "msg": "success", "data": [u.to_dict() for u in users]}

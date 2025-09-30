@@ -93,6 +93,12 @@
             margin-right: 10px;
         }
 
+        .friend.online .avatar {
+            background: #4CAF50;
+            /* 在线头像绿色 */
+        }
+
+
         #content {
             flex: 1;
             display: flex;
@@ -222,9 +228,22 @@
 
     <script>
         const socket = io("http://127.0.0.1:5000");
-        let myName = "";
+        let userId = localStorage.getItem('userid') || 0;
+        let myName = localStorage.getItem('nickname') || "";
         let passWord = "";
+        let logged = localStorage.getItem('logged') || false;
         let currentFriend = "";
+
+        if (logged) {
+            document.getElementById("login").style.display = "none";
+            document.getElementById("chat").style.display = "flex";
+
+            // ✅ 页面刷新后重新拉好友列表
+            loadFriends();
+
+            // ✅ 还要重新告诉服务器我上线了
+            socket.emit("login", { nickname: myName });
+        }
 
         function login() {
             myName = document.getElementById("nickname").value;
@@ -240,29 +259,60 @@
             })
                 .then(res => res.json())
                 .then(data => {
+                    console.log(data);
                     alert(data.msg);
                     if (data.code == 200) {
+                        localStorage.setItem('logged', true);
+                        localStorage.setItem('userid', data.data.id);
+                        localStorage.setItem('nickname', data.data.nickname);
                         socket.emit("login", { nickname: myName });
                         document.getElementById("login").style.display = "none";
                         document.getElementById("chat").style.display = "flex";
+
+                        // ✅ 登录成功后拉好友列表
+                        loadFriends();
                     }
                 });
-
         }
 
         socket.on("user_list", (users) => {
-            let friendsDiv = document.getElementById("friends");
-            friendsDiv.innerHTML = "<h3>好友列表</h3>";
-            users.forEach(u => {
-                if (u !== myName) {
-                    let div = document.createElement("div");
-                    div.className = "friend";
-                    div.innerHTML = `<div class="avatar"></div><span>${u}</span>`;
-                    div.onclick = () => selectFriend(u, div);
-                    friendsDiv.appendChild(div);
+            document.querySelectorAll(".friend").forEach(el => {
+                let name = el.querySelector("span").innerText;
+                if (users.includes(name)) {
+                    el.classList.add("online");
+                } else {
+                    el.classList.remove("online");
                 }
             });
         });
+
+
+        // loadFriends();
+        function loadFriends() {
+            fetch("/friends", {
+                method: "GET",
+                headers: { "Content-Type": "application/json" }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        let friendsDiv = document.getElementById("friends");
+                        friendsDiv.innerHTML = "<h3>好友列表</h3>";
+                        data.data.forEach(friend => {
+                            if (friend.nickname !== myName) {
+                                let div = document.createElement("div");
+                                div.className = "friend";
+                                div.innerHTML = `<div class="avatar"></div><span>${friend.nickname}</span>`;
+                                div.onclick = () => selectFriend(friend.nickname, div);
+                                friendsDiv.appendChild(div);
+                            }
+                        });
+                    } else {
+                        alert(data.msg || "获取好友列表失败");
+                    }
+                });
+        }
+
 
         function selectFriend(friend, div) {
             currentFriend = friend;
@@ -283,7 +333,7 @@
 
         socket.on("receive_message", (data) => {
             addMessage(data.sender, data.message, false);
-            if (data.sender === currentFriend) {
+            if (data.sender !== currentFriend) {
                 alert(`你收到来自 ${data.sender} 的消息：${data.message}`);
             }
         });
