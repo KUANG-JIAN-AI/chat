@@ -105,6 +105,17 @@
             flex-direction: column;
         }
 
+        #logoutBtn {
+            padding: 10px;
+            margin: 10px;
+            border: 1px dashed #4CAF50;
+            background: #f9fff9;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            color: #4CAF50;
+        }
+
         #header {
             height: 60px;
             border-bottom: 1px solid #ddd;
@@ -244,6 +255,14 @@
 
             // ✅ 还要重新告诉服务器我上线了
             socket.emit("login", { nickname: myName });
+        }
+
+        function logout() {
+            localStorage.removeItem('logged');
+            localStorage.removeItem('userid');
+            localStorage.removeItem('nickname');
+            document.getElementById("chat").style.display = "none";   // 隐藏聊天窗口
+            document.getElementById("login").style.display = "flex";  // 显示登录页
         }
 
         function login() {
@@ -406,7 +425,7 @@
         function showProfile() {
             // document.getElementById("friends").style.display = "none";
             document.getElementById("header").innerText = "个人中心 - " + myName;
-            document.getElementById("messages").innerHTML = `<p style="padding:20px;">欢迎，${myName}！这里可以放个人信息。</p>`;
+            document.getElementById("messages").innerHTML = `<p style="padding:20px;">欢迎，${myName}！</p><div id="logoutBtn" onclick="logout()">退出</div>`;
         }
     </script>
 </body>
