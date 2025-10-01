@@ -22,3 +22,12 @@ CREATE TABLE `chat_users` (
   PRIMARY KEY (`id`)  
   UNIQUE KEY `uk_nickname` (`nickname`)  
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `chat_msgs` (  
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,  
+  `sender_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '发送用户id',  
+  `receiver_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '接收用户id',  
+  `message` varchar(255) NOT NULL DEFAULT '',  
+  `created_at` int(10) unsigned DEFAULT 0,  
+  PRIMARY KEY (`id`)  
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT   CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

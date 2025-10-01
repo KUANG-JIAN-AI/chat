@@ -3,7 +3,7 @@ from .. import db
 
 
 class Msg(db.Model):
-    __tablename__ = "chat_msg"
+    __tablename__ = "chat_msgs"
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, nullable=False)
     receiver_id = db.Column(db.Integer, nullable=False)

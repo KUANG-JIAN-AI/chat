@@ -266,6 +266,7 @@
                         localStorage.setItem('logged', true);
                         localStorage.setItem('userid', data.data.id);
                         localStorage.setItem('nickname', data.data.nickname);
+                        userId = data.data.id;
                         socket.emit("login", { nickname: myName });
                         document.getElementById("login").style.display = "none";
                         document.getElementById("chat").style.display = "flex";
@@ -344,6 +345,15 @@
                     }
                 });
         }
+
+        // 监听回车键发送消息
+        document.getElementById("msgInput").addEventListener("keydown", function (e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();  // 阻止换行
+                sendMessage();
+            }
+        });
+
 
         // 发送消息
         function sendMessage() {
