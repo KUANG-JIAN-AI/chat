@@ -325,7 +325,7 @@
             document.getElementById("messages").innerHTML = "";
 
             // ✅ 拉取历史消息
-            fetch(`/msg?user_id=${userId}&friend_id=${friendId}`, {
+            fetch(`/msg?sender_id=${userId}&receiver_id=${friendId}`, {
                 method: "GET",
                 headers: { "Content-Type": "application/json" }
             })
