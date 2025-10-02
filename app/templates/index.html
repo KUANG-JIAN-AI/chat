@@ -420,6 +420,7 @@
         function showFriends() {
             // document.getElementById("friends").style.display = "block";
             document.getElementById("header").innerText = currentFriend ? "与 " + currentFriend + " 的聊天" : "请选择一个好友";
+            document.getElementById("messages").innerHTML = `<p style="padding:20px;">请选择一个好友聊天</div>`;
         }
 
         function showProfile() {
